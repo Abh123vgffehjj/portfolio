@@ -155,6 +155,7 @@ def dashboard():
                            recent_visitors=recent_visitors)
 
 
+
 # ── Resume Upload & Parse ─────────────────────────────────────────────────────
 @admin_bp.route('/upload-resume', methods=['GET', 'POST'])
 @login_required
@@ -163,55 +164,70 @@ def upload_resume():
         if 'resume' not in request.files:
             flash('No file selected.', 'error')
             return redirect(request.url)
-        
+
         file = request.files['resume']
         if not file.filename:
             flash('No file selected.', 'error')
             return redirect(request.url)
-        
+
         if not file.filename.lower().endswith('.pdf'):
             flash('Only PDF files are allowed.', 'error')
             return redirect(request.url)
-        
-        filename = secure_filename(file.filename)
-        upload_dir = current_app.config['UPLOAD_FOLDER']
-        os.makedirs(upload_dir, exist_ok=True)
-        filepath = os.path.join(upload_dir, filename)
-        file.save(filepath)
-        
-        file_size = os.path.getsize(filepath)
-        upload_id = query_db(
-            "INSERT INTO resume_uploads (filename, original_filename, file_size, parse_status) VALUES (%s,%s,%s,'uploaded')",
-            (filename, file.filename, file_size),
-            commit=True
-        )
-        
-        # Auto-parse
+
         try:
-            parsed = parse_resume(filepath)
-            if 'error' not in parsed:
-                results = save_parsed_data_to_db(parsed, query_db)
-                query_db(
-                    "UPDATE resume_uploads SET parsed=1, parse_status='success', parse_log=%s WHERE id=%s",
-                    (json.dumps(results), upload_id),
+            import tempfile
+            filename = secure_filename(file.filename)
+            file_bytes = file.read()
+            file_size = len(file_bytes)
+
+            # Save to temp file (works on Vercel serverless)
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+                tmp.write(file_bytes)
+                tmp_path = tmp.name
+
+            # Record upload in DB
+            try:
+                upload_id = query_db(
+                    "INSERT INTO resume_uploads (filename, original_filename, file_size, parse_status) VALUES (%s,%s,%s,'uploaded')",
+                    (filename, file.filename, file_size),
                     commit=True
                 )
-                flash(f'Resume parsed successfully! Updated: {", ".join(results["updated"])}', 'success')
-            else:
-                flash(f'Upload successful but parsing failed: {parsed["error"]}', 'warning')
-        except Exception as e:
-            query_db(
-                "UPDATE resume_uploads SET parse_status='error', parse_log=%s WHERE id=%s",
-                (str(e), upload_id),
-                commit=True
-            )
-            flash(f'Resume uploaded but parsing error: {str(e)}', 'error')
-        
-        return redirect(url_for('admin.upload_resume'))
-    
-    uploads = query_db("SELECT * FROM resume_uploads ORDER BY uploaded_at DESC LIMIT 20")
-    return render_template('admin/upload_resume.html', uploads=uploads)
+            except Exception:
+                upload_id = None
 
+            # Parse the temp file
+            try:
+                parsed = parse_resume(tmp_path)
+                if 'error' not in parsed:
+                    results = save_parsed_data_to_db(parsed, query_db)
+                    if upload_id:
+                        query_db(
+                            "UPDATE resume_uploads SET parsed=1, parse_status='success', parse_log=%s WHERE id=%s",
+                            (json.dumps(results), upload_id),
+                            commit=True
+                        )
+                    flash(f'Resume parsed! Updated: {", ".join(results["updated"])}', 'success')
+                else:
+                    flash(f'Upload ok but parsing failed: {parsed["error"]}', 'warning')
+            except Exception as e:
+                flash(f'Parsing error: {str(e)}', 'error')
+            finally:
+                # Always delete temp file
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
+
+        except Exception as e:
+            flash(f'Upload error: {str(e)}', 'error')
+
+        return redirect(url_for('admin.upload_resume'))
+
+    try:
+        uploads = query_db("SELECT * FROM resume_uploads ORDER BY uploaded_at DESC LIMIT 20")
+    except Exception:
+        uploads = []
+    return render_template('admin/upload_resume.html', uploads=uploads)
 
 # ── Projects CRUD ─────────────────────────────────────────────────────────────
 @admin_bp.route('/projects')
