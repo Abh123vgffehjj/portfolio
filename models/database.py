@@ -5,15 +5,16 @@ from flask import current_app, g
 
 def get_db_config():
     return {
-        'host': os.environ.get('MYSQL_HOST', 'thomas.proxy.rlwy.net'),
-        'port': int(os.environ.get('MYSQL_PORT', 26171)),
-        'user': os.environ.get('MYSQL_USER', 'root'),
-        'password': os.environ.get('MYSQL_PASSWORD', 'wEcvGAtWURCqXfwbEQHwgMAzMRgbUeEC'),
-        'database': os.environ.get('MYSQL_DATABASE', 'railway'),
+        'host': os.environ.get('MYSQL_HOST', 'localhost').strip(),
+        'port': int(os.environ.get('MYSQL_PORT', '3306').strip()),
+        'user': os.environ.get('MYSQL_USER', 'root').strip(),
+        'password': os.environ.get('MYSQL_PASSWORD', '').strip(),
+        'database': os.environ.get('MYSQL_DATABASE', 'defaultdb').strip(),
         'charset': 'utf8mb4',
         'use_unicode': True,
         'autocommit': False,
         'connection_timeout': 10,
+        'ssl_disabled': False,
     }
 
 
