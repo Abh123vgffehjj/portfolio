@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% block title %}Projects{% endblock %}
+{% block page_title %}Manage Projects{% endblock %}
+
+{% block content %}
+<div class="admin-table-wrap">
+  <div class="admin-table-header">
+    <span class="admin-table-title">All Projects ({{ items|length }})</span>
+    <a href="/admin/projects/add" class="btn btn-primary btn-sm">
+      <i class="fas fa-plus"></i> Add Project
+    </a>
+  </div>
+
+  {% if items %}
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Technologies</th>
+          <th>Featured</th>
+          <th>Order</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td style="color:var(--white);font-weight:600;max-width:200px">{{ item.title }}</td>
+          <td><span class="badge badge-red">{{ item.category or '—' }}</span></td>
+          <td style="font-size:0.8rem;color:var(--gray);max-width:200px">{{ (item.technologies or '')[:60] }}{% if item.technologies and item.technologies|length > 60 %}…{% endif %}</td>
+          <td>
+            {% if item.is_featured %}
+            <span class="badge badge-green">Yes</span>
+            {% else %}
+            <span class="badge badge-gray">No</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--gray)">{{ item.display_order }}</td>
+          <td>
+            <div style="display:flex;gap:0.5rem">
+              <a href="/admin/projects/edit/{{ item.id }}" class="btn btn-outline btn-sm">
+                <i class="fas fa-edit"></i>
+              </a>
+              <form method="POST" action="/admin/projects/delete/{{ item.id }}" style="display:inline" onsubmit="return confirm('Delete this project?')">
+                <button type="submit" class="btn btn-danger btn-sm">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:3rem;text-align:center;color:var(--gray)">
+    <div style="font-size:3rem;margin-bottom:1rem">🚀</div>
+    No projects yet. <a href="/admin/projects/add" style="color:var(--red)">Add your first project</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

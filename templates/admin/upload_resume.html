@@ -1,0 +1,114 @@
+{% extends "admin/base.html" %}
+{% block title %}Upload Resume{% endblock %}
+{% block page_title %}Upload Resume{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="admin-table-wrap">
+      <div class="admin-table-header">
+        <span class="admin-table-title">Upload PDF Resume</span>
+      </div>
+      <div style="padding:1.5rem">
+        <form method="POST" enctype="multipart/form-data" id="upload-form">
+          <div class="upload-area" id="upload-area" onclick="document.getElementById('resume-file').click()">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text" id="upload-text">Click to select your PDF resume</div>
+            <div class="upload-subtext">Or drag and drop here • PDF only • Max 16MB</div>
+          </div>
+          <input type="file" name="resume" id="resume-file" accept=".pdf" style="display:none" onchange="fileSelected(this)">
+
+          <div id="file-info" style="display:none;margin-top:1rem;padding:0.75rem;background:rgba(225,29,46,0.08);border:1px solid rgba(225,29,46,0.3);border-radius:6px;font-size:0.85rem;color:var(--gray-light)">
+            <i class="fas fa-file-pdf" style="color:var(--red)"></i>
+            <span id="file-name"></span>
+            <span id="file-size" style="color:var(--gray)"></span>
+          </div>
+
+          <div style="margin-top:1.5rem;padding:1rem;background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.3);border-radius:6px;font-size:0.85rem;color:#FFA500">
+            <i class="fas fa-info-circle"></i>
+            <strong>Auto-Parse:</strong> After upload, the system will automatically extract skills, projects, certifications, and achievements from your PDF and update the database.
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 mt-3" id="submit-btn" disabled>
+            <i class="fas fa-upload"></i> Upload & Parse Resume
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="admin-table-wrap">
+      <div class="admin-table-header">
+        <span class="admin-table-title">Upload History</span>
+      </div>
+      {% if uploads %}
+      <table>
+        <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Size</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in uploads %}
+          <tr>
+            <td style="color:var(--white);font-size:0.85rem">{{ u.original_filename }}</td>
+            <td style="font-size:0.8rem;color:var(--gray)">
+              {% if u.file_size %}{{ (u.file_size / 1024)|int }} KB{% endif %}
+            </td>
+            <td>
+              <span class="badge {{ 'badge-green' if u.parse_status == 'success' else ('badge-red' if u.parse_status == 'error' else 'badge-gray') }}">
+                {{ u.parse_status|capitalize }}
+              </span>
+            </td>
+            <td style="font-size:0.8rem;color:var(--gray)">
+              {{ u.uploaded_at.strftime('%b %d') if u.uploaded_at else '' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="padding:2rem;text-align:center;color:var(--gray)">No resumes uploaded yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fileSelected(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const sizeKB = (file.size / 1024).toFixed(1);
+  document.getElementById('file-name').textContent = ' ' + file.name + ' ';
+  document.getElementById('file-size').textContent = '(' + sizeKB + ' KB)';
+  document.getElementById('file-info').style.display = 'block';
+  document.getElementById('upload-text').textContent = 'File selected: ' + file.name;
+  document.getElementById('submit-btn').disabled = false;
+}
+
+// Drag and drop
+const area = document.getElementById('upload-area');
+area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
+area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+area.addEventListener('drop', e => {
+  e.preventDefault();
+  area.classList.remove('drag-over');
+  const fileInput = document.getElementById('resume-file');
+  fileInput.files = e.dataTransfer.files;
+  fileSelected(fileInput);
+});
+
+// Prevent double submit
+document.getElementById('upload-form').addEventListener('submit', () => {
+  document.getElementById('submit-btn').disabled = true;
+  document.getElementById('submit-btn').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading & Parsing...';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "admin/base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Visitor Analytics{% endblock %}
+
+{% block scripts %}
+<script>
+window.CHART_LABELS = {{ daily | map(attribute='date') | list | tojson }};
+window.CHART_DATA   = {{ daily | map(attribute='count') | list | tojson }};
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+  <div class="stat-card">
+    <div class="stat-card-label">Total Visitors</div>
+    <div class="stat-card-value">{{ total }}</div>
+    <div class="stat-card-icon">👁️</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Today's Visitors</div>
+    <div class="stat-card-value">{{ today }}</div>
+    <div class="stat-card-icon">📅</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Days Tracked</div>
+    <div class="stat-card-value">{{ daily|length }}</div>
+    <div class="stat-card-icon">📊</div>
+  </div>
+</div>
+
+<div class="admin-table-wrap">
+  <div class="admin-table-header">
+    <span class="admin-table-title">Daily Visitor Count (Last 30 Days)</span>
+  </div>
+
+  {% if daily %}
+  <!-- SVG chart rendered by admin.js -->
+  <div id="visitor-chart" style="padding:1rem 1.5rem;min-height:180px"></div>
+
+  <div style="padding:0 1.5rem 1rem">
+    {% set max_count = daily | map(attribute='count') | max %}
+    {% for v in daily %}
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.75rem">
+      <div style="font-family:var(--font-mono);font-size:0.8rem;color:var(--gray);width:100px;flex-shrink:0">
+        {{ v.date | string | truncate(10, True, '') }}
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:4px;height:24px;overflow:hidden;position:relative">
+        {% if max_count > 0 %}
+        <div style="width:{{ ((v.count / max_count) * 100) | int }}%;height:100%;background:linear-gradient(90deg,var(--red),var(--red-bright));border-radius:4px"></div>
+        {% endif %}
+      </div>
+      <div style="font-family:var(--font-mono);font-size:0.85rem;color:var(--red);width:40px;text-align:right;font-weight:700">
+        {{ v.count }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="padding:1rem 1.5rem;border-top:1px solid var(--glass-border)">
+    <table style="width:100%">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Visitors</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in daily %}
+        <tr>
+          <td style="color:var(--gray-light)">{{ v.date | string | truncate(10, True, '') }}</td>
+          <td style="color:var(--red);font-weight:700;font-family:var(--font-mono)">{{ v.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:3rem;text-align:center;color:var(--gray)">
+    No visitor data yet. Share your portfolio!
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

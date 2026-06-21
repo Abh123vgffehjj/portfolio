@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+{% block title %}Messages{% endblock %}
+{% block page_title %}Contact Messages{% endblock %}
+
+{% block content %}
+<div class="admin-table-wrap">
+  <div class="admin-table-header">
+    <span class="admin-table-title">All Messages ({{ items|length }})</span>
+  </div>
+
+  {% if items %}
+  <div style="overflow-x:auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Message</th>
+          <th>Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td style="color:var(--white);font-weight:600;white-space:nowrap">{{ item.name }}</td>
+          <td>
+            <a href="mailto:{{ item.email }}" style="color:var(--red)">{{ item.email }}</a>
+          </td>
+          <td style="color:var(--gray-light);font-size:0.88rem;max-width:300px">
+            <span title="{{ item.message }}">
+              {{ item.message[:120] }}{% if item.message|length > 120 %}…{% endif %}
+            </span>
+          </td>
+          <td style="color:var(--gray);font-size:0.8rem;white-space:nowrap">
+            {{ item.created_at | string | truncate(19, True, '') if item.created_at else '—' }}
+          </td>
+          <td>
+            <div style="display:flex;gap:0.5rem">
+              <a href="mailto:{{ item.email }}?subject=Re: Your message&body=Hi {{ item.name }}," class="btn btn-outline btn-sm" title="Reply">
+                <i class="fas fa-reply"></i>
+              </a>
+              <form method="POST" action="/admin/contacts/delete/{{ item.id }}" style="display:inline" onsubmit="return confirm('Delete this message?')">
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:4rem;text-align:center;color:var(--gray)">
+    <div style="font-size:3rem;margin-bottom:1rem">📭</div>
+    No messages yet. Share your portfolio to get started!
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

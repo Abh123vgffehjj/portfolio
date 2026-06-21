@@ -1,0 +1,131 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-card-label">Projects</div>
+    <div class="stat-card-value">{{ stats.projects }}</div>
+    <div class="stat-card-icon">🚀</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Skills</div>
+    <div class="stat-card-value">{{ stats.skills }}</div>
+    <div class="stat-card-icon">💡</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Certifications</div>
+    <div class="stat-card-value">{{ stats.certifications }}</div>
+    <div class="stat-card-icon">🏅</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Achievements</div>
+    <div class="stat-card-value">{{ stats.achievements }}</div>
+    <div class="stat-card-icon">🏆</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Messages</div>
+    <div class="stat-card-value" style="color:{{ '#FFA500' if stats.unread_contacts > 0 else 'var(--red)' }}">
+      {{ stats.contacts }}
+      {% if stats.unread_contacts > 0 %}
+        <span style="font-size:0.8rem;color:#FFA500">({{ stats.unread_contacts }} new)</span>
+      {% endif %}
+    </div>
+    <div class="stat-card-icon">✉️</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Total Visitors</div>
+    <div class="stat-card-value">{{ stats.visitors }}</div>
+    <div class="stat-card-icon">👁️</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-label">Resume Uploads</div>
+    <div class="stat-card-value">{{ stats.resumes }}</div>
+    <div class="stat-card-icon">📄</div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="admin-table-wrap mb-4">
+  <div class="admin-table-header">
+    <span class="admin-table-title">Quick Actions</span>
+  </div>
+  <div style="padding:1.25rem;display:flex;flex-wrap:wrap;gap:0.75rem">
+    <a href="/admin/upload-resume" class="btn btn-primary"><i class="fas fa-file-upload"></i> Upload Resume</a>
+    <a href="/admin/projects/add" class="btn btn-outline"><i class="fas fa-plus"></i> Add Project</a>
+    <a href="/admin/skills" class="btn btn-outline"><i class="fas fa-plus"></i> Add Skill</a>
+    <a href="/admin/contacts" class="btn btn-outline"><i class="fas fa-envelope"></i> View Messages</a>
+    <a href="/" target="_blank" class="btn btn-outline"><i class="fas fa-external-link-alt"></i> View Portfolio</a>
+  </div>
+</div>
+
+<!-- Recent Messages & Visitor Graph -->
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="admin-table-wrap">
+      <div class="admin-table-header">
+        <span class="admin-table-title">Recent Messages</span>
+        <a href="/admin/contacts" class="btn btn-sm btn-outline">View All</a>
+      </div>
+      {% if recent_contacts %}
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent_contacts %}
+          <tr>
+            <td style="color:var(--white);font-weight:600">{{ c.name }}</td>
+            <td><a href="mailto:{{ c.email }}" style="color:var(--red)">{{ c.email }}</a></td>
+            <td style="font-size:0.8rem;color:var(--gray)">
+              {% if c.created_at %}
+                {{ c.created_at | string | truncate(10, True, '') }}
+              {% else %}N/A{% endif %}
+            </td>
+            <td>
+              <span class="badge {{ 'badge-red' if not c.is_read else 'badge-gray' }}">
+                {{ 'New' if not c.is_read else 'Read' }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="padding:2rem;text-align:center;color:var(--gray)">No messages yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="admin-table-wrap">
+      <div class="admin-table-header">
+        <span class="admin-table-title">Visitor Trend (30d)</span>
+      </div>
+      <div style="padding:1rem">
+        {% if recent_visitors %}
+        {% for v in recent_visitors %}
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.6rem">
+          <div style="font-size:0.8rem;color:var(--gray);width:80px;flex-shrink:0">{{ v.date }}</div>
+          <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:3px;height:16px;overflow:hidden">
+            {% set max_v = recent_visitors|max(attribute='count') %}
+            <div style="width:{{ (v.count / max_v.count * 100)|int }}%;height:100%;background:linear-gradient(90deg,var(--red),var(--red-bright));border-radius:3px"></div>
+          </div>
+          <div style="font-size:0.8rem;color:var(--red);width:30px;text-align:right">{{ v.count }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;color:var(--gray);padding:2rem">No visitor data yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
